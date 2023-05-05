@@ -161,3 +161,4 @@ cython_debug/
 
 connector_db.py
 raport.xlsx
+.env
