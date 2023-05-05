@@ -4,6 +4,7 @@ import requests
 import json
 import os
 from dotenv import load_dotenv
+import asyncio
 
 load_dotenv()
 XSALE_ORGANIZATION = connector_db.XSALE_ORGANIZATION
@@ -38,7 +39,7 @@ def get_description_and_title(id):
         else:
             return {}
 
-def save_description_and_title_from_api():
+async def save_description_and_title_from_api():
     df = pd.read_excel(RAPORT_PATH)
 
     df["title"] = ""
@@ -63,7 +64,7 @@ def translate_deepl(text):
 
     return data["translations"][0]["text"]
 
-def translate_from_xlsx():    
+async def translate_from_xlsx():    
     df = pd.read_excel(RAPORT_PATH)
 
     df[f"title_{TARGET_LANG}"] = ""
@@ -74,7 +75,7 @@ def translate_from_xlsx():
         df.loc[df['description'] == df.loc[index]['description'], f"description_{TARGET_LANG}"] = translate_deepl(df.loc[index]['description'])
 
     df.to_excel(f"{RAPORT_PATH}", index=False)
-    print("done")
+    print("The translation has been completed.")
 
 def update_translation_in_xsale(id, name, description):
     url = f"https://api.xsale.ai/{XSALE_ORGANIZATION}/articles/{id}/translations"
@@ -107,7 +108,7 @@ def update_translation_in_xsale(id, name, description):
     # response = requests.put(url, headers=headers, data=payload)
     return response.status_code
 
-def update_translation_from_xlsx():
+async def update_translation_from_xlsx():
     df = pd.read_excel(RAPORT_PATH)
     df["Response_code"] = ""
 
@@ -115,8 +116,15 @@ def update_translation_from_xlsx():
         df.loc[df['xSale_ID'] == df.loc[index]['xSale_ID'], "Response_code"] = update_translation_in_xsale(df.loc[index]['xSale_ID'], df.loc[index][f'title_{TARGET_LANG}'], df.loc[index][f'description_{TARGET_LANG}']) 
 
     df.to_excel(f"{RAPORT_PATH}", index=False)
-    print("koniec")
+    print("Writing to the API has been completed. The reply code has been written to an xlsx file.")
 
-update_translation_from_xlsx()
+
+async def main():
+    await save_description_and_title_from_api()
+    await translate_from_xlsx()
+    await update_translation_from_xlsx()
+
+loop = asyncio.get_event_loop()
+loop.run_until_complete(main())    
 
 
