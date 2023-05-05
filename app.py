@@ -27,10 +27,7 @@ def get_description_and_title(id, language_id):
         else:
             return {}
 
-
-# print(get_description_and_title(16519, LANGUAGE_ID))
-
-def get_data_from_xlsx():
+def save_description_and_title_from_api():
     df = pd.read_excel(RAPORT_PATH)
 
     df["title"] = ""
@@ -42,4 +39,4 @@ def get_data_from_xlsx():
 
         df.to_excel(f"{RAPORT_PATH}", index=False)
 
-get_data_from_xlsx()
+def translate_deepl
