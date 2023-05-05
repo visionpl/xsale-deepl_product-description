@@ -29,30 +29,39 @@ def get_description_and_title(id):
     }
     response = requests.request("GET", url, headers=headers, data=payload)
     data = json.loads(response.text)
+    print(id)
 
-    for i in range(len(data)):
-        if data[i]['LanguageId'] == LANGUAGE_ID:
-            return {
-                "title": data[i]['Name'],
-                "description": data[i]['Description']
-                }
-        else:
-            return {}
+    if (response == None):
+        return {
+                    "title": "",
+                    "description": ""
+                    }
+    else:
+        for i in range(len(data)):
+            if data[i]['LanguageId'] == LANGUAGE_ID:
+                return {
+                    "title": data[i]['Name'],
+                    "description": data[i]['Description']
+                    }
+            else:
+                return {}
 
-async def save_description_and_title_from_api():
+        
+
+def save_description_and_title_from_api():
     df = pd.read_excel(RAPORT_PATH)
 
     df["title"] = ""
     df["description"] = ""
 
     for index, row in df.iterrows():
-        df.loc[df['xSale_ID'] == df.loc[index]['xSale_ID'], "title"] = get_description_and_title(df.loc[index]['xSale_ID'])['title'] 
-        df.loc[df['xSale_ID'] == df.loc[index]['xSale_ID'], "description"] = get_description_and_title(df.loc[index]['xSale_ID'])['description']
+        df.loc[df['xSale_ID'] == df.loc[index]['xSale_ID'], "title"] = get_description_and_title(df.loc[index]['xSale_ID'])['title'] if get_description_and_title(df.loc[index]['xSale_ID'])['title'] is not None else ""
+        df.loc[df['xSale_ID'] == df.loc[index]['xSale_ID'], "description"] = get_description_and_title(df.loc[index]['xSale_ID'])['description'] if get_description_and_title(df.loc[index]['xSale_ID'])['description'] is not None else ""
 
-    df.to_excel(f"{RAPORT_PATH}", index=False)
+        df.to_excel(f"{RAPORT_PATH}", index=False)
 
 def translate_deepl(text):    
-    url = "https://api-free.deepl.com/v2/translate"
+    url = "https://api.deepl.com/v2/translate"
     payload = {'text': text.encode('utf-8'), 'target_lang': TARGET_LANG, 'tag_handling': 'html', 'ignore_tags': 'img', 'source_lang': SOURCE_LANG}
     headers = {
     'Authorization': f'DeepL-Auth-Key {os.environ.get("DEEPL_KEY")}',
@@ -64,7 +73,7 @@ def translate_deepl(text):
 
     return data["translations"][0]["text"]
 
-async def translate_from_xlsx():    
+def translate_from_xlsx():    
     df = pd.read_excel(RAPORT_PATH)
 
     df[f"title_{TARGET_LANG}"] = ""
@@ -73,8 +82,9 @@ async def translate_from_xlsx():
     for index, row in df.iterrows():
         df.loc[df['title'] == df.loc[index]['title'], f"title_{TARGET_LANG}"] = translate_deepl(df.loc[index]['title'])
         df.loc[df['description'] == df.loc[index]['description'], f"description_{TARGET_LANG}"] = translate_deepl(df.loc[index]['description'])
+        print(df.loc[index]['xSale_ID'])
 
-    df.to_excel(f"{RAPORT_PATH}", index=False)
+        df.to_excel(f"{RAPORT_PATH}", index=False)
     print("The translation has been completed.")
 
 def update_translation_in_xsale(id, name, description):
@@ -108,7 +118,7 @@ def update_translation_in_xsale(id, name, description):
     # response = requests.put(url, headers=headers, data=payload)
     return response.status_code
 
-async def update_translation_from_xlsx():
+def update_translation_from_xlsx():
     df = pd.read_excel(RAPORT_PATH)
     df["Response_code"] = ""
 
@@ -119,12 +129,9 @@ async def update_translation_from_xlsx():
     print("Writing to the API has been completed. The reply code has been written to an xlsx file.")
 
 
-async def main():
-    await save_description_and_title_from_api()
-    await translate_from_xlsx()
-    await update_translation_from_xlsx()
 
-loop = asyncio.get_event_loop()
-loop.run_until_complete(main())    
 
+# save_description_and_title_from_api()
+translate_from_xlsx()
+# update_translation_from_xlsx()
 
